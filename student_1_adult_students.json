@@ -1,0 +1,20 @@
+{
+    "id": 1,
+    "last_name": "Тест",
+    "first_name": "Тест",
+    "middle_name": "Тест",
+    "birth_date": "1111-11-11",
+    "address": "ул Test д Test кв Test 1",
+    "gender": "male",
+    "snils": "123-456-789 10",
+    "id_type": "passport",
+    "id_details": "Паспорт 1234 123456 выдан Test 1111-11-11",
+    "bank_details": "111111",
+    "phone": "+79999999999",
+    "email": "Test@Test",
+    "study_plan": "Практический курс китайского языка для взрослых",
+    "exam_selection": null,
+    "exam_date": null,
+    "status": "проверено",
+    "submission_date": "2024-10-21 23:29:28"
+}
