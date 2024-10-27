@@ -3,11 +3,17 @@
 
 <h1>Модерация заявок</h1>
 
+{% if success_message %}
+    <div class="alert alert-success" role="alert">
+        {{ success_message }}
+    </div>
+{% endif %}
+
 <form method="GET" action="{{ base_url }}/moderation">
     <label for="table_name">Таблица:</label>
     <select name="table_name" id="table_name">
-        <option value="students" {% if table_name == 'students' %}selected{% endif %}>Студенты</option>
-        <option value="adult_students" {% if table_name == 'adult_students' %}selected{% endif %}>Взрослые студенты</option>
+        <option value="students" {% if table_name == 'students' %}selected{% endif %}>Несовершеннолетние</option>
+        <option value="adult_students" {% if table_name == 'adult_students' %}selected{% endif %}>Взрослые</option>
     </select>
 
     <label for="status">Статус:</label>
@@ -42,17 +48,9 @@
             <td>{{ student[1] }}</td>
             <td>{{ student[2] }}</td>
             <td>{{ student[3] }}</td>
-            <td>{{ student[17] }}</td>
+            <td>{{ student[20] }}</td>
             <td>
                 <a href="{{ base_url }}/moderation/students/student/{{ student[0] }}">Просмотр</a>
-                {% if student[17] == 'на проверке' %}
-                <form method="POST" action="{{ base_url }}/moderation/students/student/{{ student[0] }}" style="display:inline;">
-                    <input type="hidden" name="student_id" value="{{ student[0] }}">
-                    <input type="hidden" name="table_name" value="students">
-                    <button type="submit" name="action" value="approve" class="btn btn-success">Подтвердить</button>
-                    <button type="submit" name="action" value="reject" class="btn btn-danger">Отклонить</button>
-                </form>
-                {% endif %}
             </td>
         </tr>
         {% endfor %}
@@ -65,18 +63,9 @@
             <td>{{ student[16] }}</td>
             <td>
                 <a href="{{ base_url }}/moderation/adult_students/student/{{ student[0] }}">Просмотр</a>
-                {% if student[16] == 'на проверке' %}
-                    <form method="POST" action="{{ base_url }}/moderation/adult_students/student/{{ student[0] }}" style="display:inline;">
-                        <input type="hidden" name="student_id" value="{{ student[0] }}">
-                        <input type="hidden" name="table_name" value="adult_students">
-                        <button type="submit" name="action" value="approve" class="btn btn-success">Подтвердить</button>
-                        <button type="submit" name="action" value="reject" class="btn btn-danger">Отклонить</button>
-                    </form>
-                {% endif %}
             </td>
         </tr>
         {% endfor %}
-
     </tbody>
 </table>
 

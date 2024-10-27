@@ -28,7 +28,8 @@ def init_db():
             exam_selection TEXT,
             exam_date TEXT,
             status TEXT NOT NULL DEFAULT 'на проверке',
-            submission_date TEXT NOT NULL
+            submission_date TEXT NOT NULL,
+            file_paths TEXT
         )
     ''')
 
@@ -67,7 +68,10 @@ def init_db():
             gender TEXT NOT NULL,
             snils TEXT,
             id_type TEXT NOT NULL,
-            id_details TEXT NOT NULL,
+            id_serial TEXT,
+            id_number TEXT NOT NULL,
+            id_issued_by TEXT,
+            id_issued_date TEXT,
             bank_details TEXT,
             phone TEXT NOT NULL,
             email TEXT NOT NULL,
@@ -75,7 +79,16 @@ def init_db():
             exam_selection TEXT,
             exam_date TEXT,
             status TEXT NOT NULL DEFAULT 'на проверке',
-            submission_date TEXT NOT NULL
+            submission_date TEXT NOT NULL,
+            file_paths TEXT
+        )
+    ''')
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            data BLOB NOT NULL
         )
     ''')
 

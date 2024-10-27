@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, request, redirect, url_for, current_app
+from flask import Flask, render_template, request, redirect, url_for, current_app, session
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import sqlite3
 import flask
@@ -7,6 +7,9 @@ import json
 import datetime
 import os
 import shutil
+
+from werkzeug.utils import secure_filename
+
 import db
 import logging
 from datetime import timedelta
@@ -24,6 +27,11 @@ DOCS_TTL = int(os.environ["DOCS_TTL"]) if "DOCS_TTL" in os.environ else 3600
 app = flask.Flask("chinaekb_form")
 app.logger.setLevel(LOG_LEVEL)
 app.secret_key = 'secret_123'
+
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
+app.config['UPLOAD_FOLDER'] = 'uploads'
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 pdfoptions = {}
 
@@ -193,7 +201,6 @@ def education_adult():
         studentid_number = flask.request.form.get('studentid-number')
         studentid_by = flask.request.form.get('studentid-by')
         studentid_issued = str(flask.request.form.get('studentid-issued'))
-        studentid = "Паспорт " + studentid_serial + " " + studentid_number + " выдан " + studentid_by + " " + studentid_issued
         studentbank = flask.request.form.get('studentbank')
         studentphone = flask.request.form.get('studentphone')
         studentemail = flask.request.form.get('studentemail')
@@ -202,20 +209,34 @@ def education_adult():
         exam_date = flask.request.form.get('examdate')
         submission_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
 
         c.execute('''
-            INSERT INTO adult_students (last_name, first_name, middle_name, birth_date, address, gender, snils, id_type, id_details, bank_details, phone, email, study_plan, exam_selection, exam_date, submission_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender, studentsnils, "passport", studentid, studentbank, studentphone, studentemail, study_plan, exam_selection, exam_date, submission_date))
+            INSERT INTO adult_students (last_name, first_name, middle_name, birth_date, address, gender, snils, id_type, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email, study_plan, exam_selection, exam_date, submission_date, file_paths)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender, studentsnils, "passport", studentid_serial, studentid_number, studentid_by, studentid_issued, studentbank, studentphone, studentemail, study_plan, exam_selection, exam_date, submission_date, ','.join(file_paths)))
 
         conn.commit()
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success":True, "message":"Form submitted successfully"}), 200, mimetype="application/json")
+        return redirect(url_for('success'))
 
 @app.route(BASE_URL + "/exam_adult", methods=["GET", "POST"])
 def exam_adult():
@@ -233,7 +254,6 @@ def exam_adult():
         studentid_number = flask.request.form.get('studentid-number')
         studentid_by = flask.request.form.get('studentid-by')
         studentid_issued = str(flask.request.form.get('studentid-issued'))
-        studentid = "Паспорт " + studentid_serial + " " + studentid_number + " выдан " + studentid_by + " " + studentid_issued
         studentbank = flask.request.form.get('studentbank')
         studentphone = flask.request.form.get('studentphone')
         studentemail = flask.request.form.get('studentemail')
@@ -241,20 +261,34 @@ def exam_adult():
         examdate = flask.request.form.get("examdate")
         submission_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
 
         c.execute('''
-            INSERT INTO adult_students (last_name, first_name, middle_name, birth_date, address, gender, snils, id_type, id_details, bank_details, phone, email, study_plan, exam_selection, exam_date, submission_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender, studentsnils, "passport", studentid, studentbank, studentphone, studentemail, "Экзамен для взрослых", examselection, examdate, submission_date))
+            INSERT INTO adult_students (last_name, first_name, middle_name, birth_date, address, gender, snils, id_type, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email, study_plan, exam_selection, exam_date, submission_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender, studentsnils, "passport", studentid_serial, studentid_number, studentid_by, studentid_issued, studentbank, studentphone, studentemail, "Экзамен для взрослых", examselection, examdate, submission_date))
 
         conn.commit()
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success":True, "message":"Form submitted successfully"}), 200, mimetype="application/json")
+        return redirect(url_for('success'))
 
 @app.route(BASE_URL + "/education_children_under14", methods=["GET", "POST"])
 def education_children_under14():
@@ -297,6 +331,20 @@ def education_children_under14():
         clientphone = flask.request.form.get('clientphone')
         clientemail = flask.request.form.get('clientemail')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
@@ -325,7 +373,7 @@ def education_children_under14():
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success": True, "message": "Form submitted successfully"}), 200, mimetype="application/json")
+        return redirect(url_for('success'))
 
 @app.route(BASE_URL + "/education_children_over14", methods=["GET", "POST"])
 def education_children_over14():
@@ -368,34 +416,47 @@ def education_children_over14():
         clientphone = flask.request.form.get('clientphone')
         clientemail = flask.request.form.get('clientemail')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
 
         c.execute('''
-                INSERT INTO students (last_name, first_name, middle_name, birth_date, address, gender, snils, age_group, id_type, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email, study_plan, exam_selection, exam_date, status, submission_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-        studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender,
-        studentsnils, "under14", id_type, studentid_serial, studentid_number, studentid_by, studentid_issued,
-        studentbank, studentphone, studentemail, study_plan, exam_selection, exam_date, "на проверке", submission_date))
+            INSERT INTO students (last_name, first_name, middle_name, birth_date, address, gender, snils, age_group, id_type, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email, study_plan, exam_selection, exam_date, status, submission_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            studentname_lastname, studentname_name, studentname_surname, studentbirth, studentaddress, studentgender,
+            studentsnils, "over14", id_type, studentid_serial, studentid_number, studentid_by, studentid_issued,
+            studentbank, studentphone, studentemail, study_plan, exam_selection, exam_date, "на проверке", submission_date))
 
         student_id = c.lastrowid
 
         c.execute('''
-                INSERT INTO representatives (student_id, last_name, first_name, middle_name, birth_date, address, gender, snils, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-        student_id, clientname_lastname, clientname_name, clientname_surname, clientbirth, clientaddress, clientgender,
-        clientsnils, clientid_serial, clientid_number, clientid_by, clientid_issued, clientbank, clientphone,
-        clientemail))
+            INSERT INTO representatives (student_id, last_name, first_name, middle_name, birth_date, address, gender, snils, id_serial, id_number, id_issued_by, id_issued_date, bank_details, phone, email)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            student_id, clientname_lastname, clientname_name, clientname_surname, clientbirth, clientaddress, clientgender,
+            clientsnils, clientid_serial, clientid_number, clientid_by, clientid_issued, clientbank, clientphone,
+            clientemail))
 
         conn.commit()
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success": True, "message": "Form submitted successfully"}), 200, mimetype="application/json")
-
+        return redirect(url_for('success'))
 
 @app.route(BASE_URL + "/exam_children_under14", methods=["GET", "POST"])
 def exam_children_under14():
@@ -438,6 +499,20 @@ def exam_children_under14():
         clientphone = flask.request.form.get('clientphone')
         clientemail = flask.request.form.get('clientemail')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
@@ -458,7 +533,7 @@ def exam_children_under14():
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success":True, "message":"Form submitted successfully"}), 200, mimetype="application/json")
+        return redirect(url_for('success'))
 
 @app.route(BASE_URL + "/exam_children_over14", methods=["GET", "POST"])
 def exam_children_over14():
@@ -501,6 +576,20 @@ def exam_children_over14():
         clientphone = flask.request.form.get('clientphone')
         clientemail = flask.request.form.get('clientemail')
 
+        # Проверка наличия загруженных файлов
+        studentfiles = flask.request.files.getlist('studentfiles')
+        if not studentfiles:
+            return "No files uploaded", 400
+
+        # Обработка загруженных файлов
+        file_paths = []
+        for studentfile in studentfiles:
+            if studentfile and studentfile.filename:
+                filename = secure_filename(studentfile.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                studentfile.save(file_path)
+                file_paths.append(filename)
+
         # Сохранение данных в базу данных
         conn = sqlite3.connect('chinaekb.db')
         c = conn.cursor()
@@ -521,7 +610,7 @@ def exam_children_over14():
         conn.close()
 
         # Возвращаем успешный ответ
-        return flask.Response(json.dumps({"success":True, "message":"Form submitted successfully"}), 200, mimetype="application/json")
+        return redirect(url_for('success'))
 
 # Устанавливаем время жизни "запомнить меня" куки (например, 7 дней)
 app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=7)
@@ -598,83 +687,10 @@ def moderation():
         current_app.logger.info(f"Students: {students}")
         current_app.logger.info(f"Adult Students: {adult_students}")
 
-        return render_template("moderation.html", base_url=BASE_URL, students=students, adult_students=adult_students, minor_students_with_representatives=minor_students_with_representatives, table_name=table_name, status=status, limit=limit, page=page, total_pages=total_pages)
+        # Получаем сообщение из сессии и удаляем его
+        success_message = session.pop('success_message', None)
 
-    elif request.method == 'POST':
-        student_id = request.form.get('student_id')
-        action = request.form.get('action')
-        table_name = request.form.get('table_name')
-
-        if action == 'approve':
-            # Обновляем статус заявки на "проверено"
-            conn = sqlite3.connect('chinaekb.db')
-            c = conn.cursor()
-            c.execute(f'UPDATE {table_name} SET status = ? WHERE id = ?', ('проверено', student_id))
-            conn.commit()
-            conn.close()
-
-            # Получаем данные заявки для отправки в 1С
-            conn = sqlite3.connect('chinaekb.db')
-            c = conn.cursor()
-            c.execute(f'SELECT * FROM {table_name} WHERE id = ?', (student_id,))
-            student = c.fetchone()
-            conn.close()
-
-            # Формируем JSON и отправляем данные в 1С
-            student_data = {
-                'id': student[0],
-                'last_name': student[1],
-                'first_name': student[2],
-                'middle_name': student[3],
-                'birth_date': student[4],
-                'address': student[5],
-                'gender': student[6],
-                'snils': student[7],
-                'age_group': student[8],
-                'id_type': student[9],
-                'id_serial': student[10],
-                'id_number': student[11],
-                'id_issued_by': student[12],
-                'id_issued_date': student[13],
-                'bank_details': student[14],
-                'phone': student[15],
-                'email': student[16],
-                'study_plan': student[17],
-                'exam_selection': student[18],
-                'exam_date': student[19],
-                'status': student[20],
-                'submission_date': student[21]
-            }
-
-            # Сохраняем данные JSON в файл
-            filename = f"student_{student_id}.json"
-            save_json_to_file(student_data, filename)
-
-            # Отправка данных в 1С (!!!закомментировано)
-            # try:
-            #     response = requests.post('https://your-1c-service.com/api/endpoint', json=student_data)
-            #     response.raise_for_status()  # Проверка на ошибки HTTP
-            #     logger.info(f"Заявка {student_id} одобрена и отправлена в 1С")
-            #     return json.dumps({"success": True, "message": "Заявка одобрена и отправлена в 1С"}), 200, {'Content-Type': 'application/json'}
-            # except requests.exceptions.RequestException as e:
-            #     logger.error(f"Ошибка при отправке данных в 1С: {e}")
-            #     return json.dumps({"success": False, "message": "Ошибка при отправке данных в 1С"}), 500, {'Content-Type': 'application/json'}
-
-            return json.dumps({"success": True, "message": "Заявка одобрена и данные сохранены в файл"}), 200, {'Content-Type': 'application/json'}
-
-        elif action == 'reject':
-            # Обновляем статус заявки на "отклонено"
-            conn = sqlite3.connect('chinaekb.db')
-            c = conn.cursor()
-            c.execute(f'UPDATE {table_name} SET status = ? WHERE id = ?', ('отклонено', student_id))
-            conn.commit()
-            conn.close()
-
-            logger.info(f"Заявка {student_id} отклонена")
-            return json.dumps({"success": True, "message": "Заявка отклонена"}), 200, {'Content-Type': 'application/json'}
-
-        return json.dumps({"success": False, "message": "Неизвестное действие"}), 400, {'Content-Type': 'application/json'}
-
+        return render_template("moderation.html", base_url=BASE_URL, students=students, adult_students=adult_students, minor_students_with_representatives=minor_students_with_representatives, table_name=table_name, status=status, limit=limit, page=page, total_pages=total_pages, success_message=success_message)
 
 @app.route(BASE_URL + "/moderation/<table_name>/student/<int:student_id>", methods=["GET", "POST"])
 @login_required
@@ -782,20 +798,19 @@ def student_details(table_name, student_id):
                         'address': student[5],
                         'gender': student[6],
                         'snils': student[7],
-                        'age_group': student[8],
-                        'id_type': student[9],
-                        'id_serial': student[10],
-                        'id_number': student[11],
-                        'id_issued_by': student[12],
-                        'id_issued_date': student[13],
-                        'bank_details': student[14],
-                        'phone': student[15],
-                        'email': student[16],
-                        'study_plan': student[17],
-                        'exam_selection': student[18],
-                        'exam_date': student[19],
-                        'status': student[20],
-                        'submission_date': student[21]
+                        'id_type': student[8],
+                        'id_serial': student[9],
+                        'id_number': student[10],
+                        'id_issued_by': student[11],
+                        'id_issued_date': student[12],
+                        'bank_details': student[13],
+                        'phone': student[14],
+                        'email': student[15],
+                        'study_plan': student[16],
+                        'exam_selection': student[17],
+                        'exam_date': student[18],
+                        'status': student[19],
+                        'submission_date': student[20]
                     }
 
                 # Сохраняем данные JSON в файл
@@ -812,8 +827,11 @@ def student_details(table_name, student_id):
                 #     logger.error(f"Ошибка при отправке данных в 1С: {e}")
                 #     return json.dumps({"success": False, "message": "Ошибка при отправке данных в 1С"}), 500, {'Content-Type': 'application/json'}
 
-                logger.info(f"Заявка {student_id} одобрена и данные сохранены в файл {filename}")
-                return json.dumps({"success": True, "message": "Заявка одобрена и данные сохранены в файл"}), 200, {'Content-Type': 'application/json'}
+                # Добавляем сообщение в сессию
+                session['success_message'] = "Заявка успешно отправлена в 1С"
+
+                # Перенаправляем пользователя на страницу модерации
+                return redirect(url_for('moderation'))
 
             except Exception as e:
                 # Откат транзакции в случае ошибки
@@ -845,6 +863,13 @@ def save_json_to_file(data, filename):
     except Exception as e:
         logger.error(f"Ошибка при сохранении данных в файл {filename}: {e}")
 
+@app.route(BASE_URL + "/success")
+def success():
+    return flask.render_template("success.html", base_url=BASE_URL)
+
+@app.route(BASE_URL + "/<path:file_path>", methods=['GET', 'POST'])
+def get_file(file_path):
+    return flask.send_from_directory(app.config['UPLOAD_FOLDER'], file_path)
 
 # Debug only
 if __name__ == "__main__":
