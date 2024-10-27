@@ -722,10 +722,6 @@ def student_details(table_name, student_id):
             c = conn.cursor()
 
             try:
-                # Обновляем статус заявки на "проверено"
-                c.execute(f'UPDATE {table_name} SET status = ? WHERE id = ?', ('проверено', student_id))
-                conn.commit()
-
                 # Получаем данные заявки для отправки в 1С
                 c.execute(f'SELECT * FROM {table_name} WHERE id = ?', (student_id,))
                 student = c.fetchone()
@@ -814,24 +810,28 @@ def student_details(table_name, student_id):
                     }
 
                 # Сохраняем данные JSON в файл
-                filename = f"student_{student_id}_{table_name}.json"
-                save_json_to_file(student_data, filename)
+                ##filename = f"student_{student_id}_{table_name}.json"
+                ##save_json_to_file(student_data, filename)
 
-                # Отправка данных в 1С (!!!закомментировано)
-                # try:
-                #     response = requests.post('https://your-1c-service.com/api/endpoint', json=student_data)
-                #     response.raise_for_status()  # Проверка на ошибки HTTP
-                #     logger.info(f"Заявка {student_id} одобрена и отправлена в 1С")
-                #     return json.dumps({"success": True, "message": "Заявка одобрена и отправлена в 1С"}), 200, {'Content-Type': 'application/json'}
-                # except requests.exceptions.RequestException as e:
-                #     logger.error(f"Ошибка при отправке данных в 1С: {e}")
-                #     return json.dumps({"success": False, "message": "Ошибка при отправке данных в 1С"}), 500, {'Content-Type': 'application/json'}
+                # Отправка данных в 1С
+                try:
+                    response = requests.post('https://1c.rsvpu.ru/univer_prof_test/hs/confucius_center/put_contract',
+                                             json=student_data, auth=('AbiturWeb', 's5*Uzjea'))
+                    response.raise_for_status()  # Проверка на ошибки HTTP
+                    logger.info(f"Заявка {student_id} одобрена и отправлена в 1С")
 
-                # Добавляем сообщение в сессию
-                session['success_message'] = "Заявка успешно отправлена в 1С"
+                    # Обновляем статус заявки на "проверено"
+                    c.execute(f'UPDATE {table_name} SET status = ? WHERE id = ?', ('проверено', student_id))
+                    conn.commit()
 
-                # Перенаправляем пользователя на страницу модерации
-                return redirect(url_for('moderation'))
+                    # Добавляем сообщение в сессию
+                    session['success_message'] = "Заявка успешно отправлена в 1С"
+
+                    # Перенаправляем пользователя на страницу модерации
+                    return redirect(url_for('moderation'))
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"Ошибка при отправке данных в 1С: {e}")
+                    return json.dumps({"success": False, "message": "Ошибка при отправке данных в 1С"}), 500, {'Content-Type': 'application/json'}
 
             except Exception as e:
                 # Откат транзакции в случае ошибки

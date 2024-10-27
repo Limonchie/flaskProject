@@ -11,17 +11,17 @@
 
 <form method="GET" action="{{ base_url }}/moderation">
     <label for="table_name">Таблица:</label>
-    <select name="table_name" id="table_name">
-        <option value="students" {% if table_name == 'students' %}selected{% endif %}>Несовершеннолетние</option>
-        <option value="adult_students" {% if table_name == 'adult_students' %}selected{% endif %}>Взрослые</option>
+    <select name="table_name" id=="table_name">
+        <option value="students" {% if table_name=='students' %}selected{% endif %}>Несовершеннолетние</option>
+        <option value="adult_students" {% if table_name=='adult_students' %}selected{% endif %}>Взрослые</option>
     </select>
 
     <label for="status">Статус:</label>
     <select name="status" id="status">
-        <option value="all" {% if status == 'all' %}selected{% endif %}>Все</option>
-        <option value="на проверке" {% if status == 'на проверке' %}selected{% endif %}>На проверке</option>
-        <option value="проверено" {% if status == 'проверено' %}selected{% endif %}>Проверено</option>
-        <option value="отклонено" {% if status == 'отклонено' %}selected{% endif %}>Отклонено</option>
+        <option value="all" {% if status=='all' %}selected{% endif %}>Все</option>
+        <option value="на проверке" {% if status=='на проверке' %}selected{% endif %}>На проверке</option>
+        <option value="проверено" {% if status=='проверено' %}selected{% endif %}>Проверено</option>
+        <option value="отклонено" {% if status=='отклонено' %}selected{% endif %}>Отклонено</option>
     </select>
 
     <label for="limit">Лимит:</label>
@@ -60,7 +60,7 @@
             <td>{{ student[1] }}</td>
             <td>{{ student[2] }}</td>
             <td>{{ student[3] }}</td>
-            <td>{{ student[16] }}</td>
+            <td>{{ student[19] }}</td>
             <td>
                 <a href="{{ base_url }}/moderation/adult_students/student/{{ student[0] }}">Просмотр</a>
             </td>
