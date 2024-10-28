@@ -189,7 +189,7 @@
             <th>Загруженные файлы</th>
             <td>
                 <ul>
-                    {% for file_path in student[21].split(',') %}
+                    {% for file_path in student[22].split(',') %}
                         <li><a href="{{ url_for('get_file', file_path=file_path) }}" target="_blank">{{ file_path }}</a></li>
                     {% endfor %}
                 </ul>
@@ -331,11 +331,10 @@
 </style>
 
 <script>
-    document.getElementById('moderationForm').addEventListener('submit', function() {
-        // Блокируем кнопки после отправки формы
-        document.getElementById('approveButton').disabled = true;
-        document.getElementById('rejectButton').disabled = true;
+    document.getElementById('moderationForm').addEventListener('submit', function(event) {
+        // Делаем кнопки невидимыми после отправки формы
+        document.getElementById('approveButton').style.display = 'none';
+        document.getElementById('rejectButton').style.display = 'none';
     });
 </script>
-
 {% endblock %}
