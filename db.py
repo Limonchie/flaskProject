@@ -84,14 +84,6 @@ def init_db():
         )
     ''')
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS files (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename TEXT NOT NULL,
-            data BLOB NOT NULL
-        )
-    ''')
-
     conn.commit()
     conn.close()
 

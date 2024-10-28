@@ -20,12 +20,12 @@
         </div>
         <div class="form-group col-md-4">
             <label for="studentname-surname">Отчество</label>
-            <input type="text" class="form-control" id="studentname-surname" name="studentname-surname" placeholder="Иванович" pattern="^[А-Яа-яЁё]+$">
+            <input type="text" class="form-control" id="studentname-surname" name="studentname-surname" placeholder="Иванович" pattern="^[А-Яа-яЁё\s]+$">
         </div>
     </div>
     <div class="form-group">
         <label for="studentbirth">Дата рождения (<b style="color: red;">*</b>) </label>
-        <input type="date" class="form-control" id="studentbirth" name="studentbirth" placeholder="01.01.1970" required>
+        <input type="date" class="form-control" id="studentbirth" name="studentbirth" placeholder="01.01.1970" required min="1900-01-01">
     </div>
     <div class="form-group">
         <label for="studentaddress">Местонахождение/адрес места жительства (<b style="color: red;">*</b>) </label>
@@ -57,7 +57,7 @@
         </div>
         <div class="form-group">
             <label for="studentid-issued">Дата выдачи (<b style="color: red;">*</b>) </label>
-            <input type="date" class="form-control" id="studentid-issued" name="studentid-issued" placeholder="01.01.1970" required>
+            <input type="date" class="form-control" id="studentid-issued" name="studentid-issued" placeholder="01.01.1970" required min="1900-01-01">
         </div>
     </div>
     <div class="form-group">
@@ -66,7 +66,7 @@
     </div>
     <div class="form-group">
         <label for="studentphone">Номер телефона (<b style="color: red;">*</b>) </label>
-        <input type="tel" class="form-control" id="studentphone" name="studentphone" placeholder="+79998887766" required pattern="+7[0-9]{11}">
+        <input type="tel" class="form-control" id="studentphone" name="studentphone" placeholder="+79998887766" required pattern="\+7\d{10}">
     </div>
     <div class="form-group">
         <label for="studentemail">Адрес электронной почты (<b style="color: red;">*</b>) </label>
@@ -75,7 +75,7 @@
 
     <div class="form-group">
         <label for="studentfiles">Загрузите файлы скан-копий документов (обязательно)</label>
-        <input type="file" class="form-control-file" id="studentfiles" name="studentfiles" multiple required>
+        <input type="file" class="form-control-file" id="studentfiles" name="studentfiles" multiple required accept=".pdf, .jpg, .jpeg, .png">
     </div>
 
     <div class="form-check">
